@@ -37,7 +37,6 @@ class TemplateRequest extends FormRequest
     public function rules()
     {
         $searchGroup = $this->_mVtSearchGroup::find($this->template['searchGroupId']);
-
         if (collect($searchGroup)->isEmpty()) {
             throw new HttpResponseException(
                 response()->json(
@@ -50,7 +49,9 @@ class TemplateRequest extends FormRequest
             );
         }
 
+        $this->merge(['isPdfReport' => $searchGroup->is_report]);
         $this->_saveTemplateBll->_isPdfReport = $searchGroup->is_report;
+
         $validation = [
             "template" => "required|array",                         // Template Validation
             "template.searchGroupId" => "required|integer",

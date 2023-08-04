@@ -2,6 +2,7 @@
 
 namespace App\BLL;
 
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -27,6 +28,8 @@ class GenerateSearchReportBll
         foreach ($req->params as $item) {
             $item = (object)$item;
             $parameter = $this->_parameters->where('id', $item->id)->first();
+            if (collect($parameter)->isEmpty())
+                throw new Exception("Parameter Not Available");
             $linkName = $parameter->link_name;
             $customVars->put('$' . $linkName, "'" . $item->controlValue . "'");
         }

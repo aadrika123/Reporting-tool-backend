@@ -395,6 +395,7 @@ class MasterController extends Controller
         try {
             $req->merge(['isUpdation' => false]);
             $saveTemplateBll = new SaveTemplateBll;
+            $saveTemplateBll->_isPdfReport = $req->isPdfReport;
             $saveTemplateBll->store($req);
             return responseMsgs(true, "Successfully Saved the template", [], "RP0113", "1.0", $req->deviceId);
         } catch (Exception $e) {
@@ -416,6 +417,7 @@ class MasterController extends Controller
         try {
             $req->merge(['isUpdation' => true]);
             $saveTemplateBll = new SaveTemplateBll;
+            $saveTemplateBll->_isPdfReport = $req->isPdfReport;
             $saveTemplateBll->store($req);
             return responseMsgs(true, "Successfully Updated the template", [], "RP0114", "1.0", $req->deviceId);
         } catch (Exception $e) {

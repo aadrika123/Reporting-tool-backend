@@ -87,9 +87,17 @@ class SaveTemplateBll
 
         $req->merge(['reportTemplateId' => $reportTemplateId]);
         if ($this->_isPdfReport == true) {                          // for Pdf Reports
-            $this->saveTempPageLayouts($req);                       // Save Page Layouts
-            $this->saveTempDetails($req);                           // Save Template Details
-            $this->saveTempFooter($req);                            // Save Template Footer
+            if ($req->isUpdation) {                                 // Updation
+                $this->updateTempPageLayouts($req);                       // Save Page Layouts
+                $this->updateTempDetails($req);                           // Save Template Details
+                $this->updateTempFooter($req);                            // Save Template Footer
+            }
+
+            if ($req->isUpdation == false) {
+                $this->saveTempPageLayouts($req);                       // Save Page Layouts
+                $this->saveTempDetails($req);                           // Save Template Details
+                $this->saveTempFooter($req);                            // Save Template Footer
+            }
         }
 
         if ($this->_isPdfReport == false)                           // For non printable reports
@@ -198,6 +206,204 @@ class SaveTemplateBll
         }
     }
 
+    // ╔═══════════════════════════════════════════════════════════════════════════╗
+    // ║            ✅ Template Layout,Details,Footer Updation ✅                 ║ 
+    // ╚═══════════════════════════════════════════════════════════════════════════╝ 
+
+    // Update Template Layout
+    public function updateTempPageLayouts($req)
+    {
+        $getTblLayouts = $this->_mTempLayout->getLayoutByTempId($req->template['id']);
+        $reqLayouts = collect($req->layouts);
+        $toUpdateIds = $reqLayouts->pluck('id');
+        $toBeDeletedLayouts = $getTblLayouts->whereNotIn('id', $toUpdateIds);
+
+        if (collect($toBeDeletedLayouts)->isNotEmpty()) {               // To Delete Layouts
+            foreach ($toBeDeletedLayouts as $item) {
+                $item->update(['status' => 0]);
+            }
+        }
+
+        foreach ($toUpdateIds as $id) {
+            $item = $reqLayouts->where('id', $id)->first();
+            if (collect($item)->isNotEmpty()) {
+                $item = (object)$item;
+                $updateItem = $getTblLayouts->where('id', $id)->first();
+                if ($updateItem) {
+                    $updateItem->update([
+                        "report_template_id" => $req->reportTemplateId,
+                        "field_type" => $item->fieldType ?? null,
+                        "caption" => $item->caption ?? null,
+                        "field_name" => $item->fieldName ?? null,
+                        "page_no" => $item->pageNo ?? null,
+                        "x" => $item->x ?? null,
+                        "y" => $item->y ?? null,
+                        "width" => $item->width ?? null,
+                        "height" => $item->height ?? null,
+                        "font_name" => $item->fontName ?? null,
+                        "font_size" => $item->fontSize ?? null,
+                        "is_underline" => $item->isUnderline ?? null,
+                        "is_bold" => $item->isBold ?? null,
+                        "is_italic" => $item->isItalic ?? null,
+                        "is_visible" => $item->isVisible ?? null,
+                        "alignment" => $item->alignment ?? null,
+                        "color" => $item->color ?? null,
+                        "status" => 1,
+                        "relative_path" => $item->relativePath ?? null,
+                    ]);
+                } else {
+                    $this->_mTempLayout::create([
+                        "report_template_id" => $req->reportTemplateId,
+                        "field_type" => $item->fieldType ?? null,
+                        "caption" => $item->caption ?? null,
+                        "field_name" => $item->fieldName ?? null,
+                        "page_no" => $item->pageNo ?? null,
+                        "x" => $item->x ?? null,
+                        "y" => $item->y ?? null,
+                        "width" => $item->width ?? null,
+                        "height" => $item->height ?? null,
+                        "font_name" => $item->fontName ?? null,
+                        "font_size" => $item->fontSize ?? null,
+                        "is_underline" => $item->isUnderline ?? null,
+                        "is_bold" => $item->isBold ?? null,
+                        "is_italic" => $item->isItalic ?? null,
+                        "is_visible" => $item->isVisible ?? null,
+                        "alignment" => $item->alignment ?? null,
+                        "color" => $item->color ?? null,
+                        "status" => 1,
+                        "relative_path" => $item->relativePath ?? null,
+                    ]);
+                }
+            }
+        }
+    }
+
+    // Update Template Details
+    public function updateTempDetails($req)
+    {
+        $getTblDetails = $this->_mTempDtls->getDetailsByTempId($req->template['id']);
+        $reqDetails = collect($req->details);
+        $toUpdateIds = $reqDetails->pluck('id');
+        $toBeDeletedDetails = $getTblDetails->whereNotIn('id', $toUpdateIds);
+
+        if (collect($toBeDeletedDetails)->isNotEmpty()) {                   // To Delete Template Details
+            foreach ($toBeDeletedDetails as $item) {
+                $item->update(['status' => 0]);
+            }
+        }
+
+        foreach ($toUpdateIds as $id) {
+            $item = $reqDetails->where('id', $id)->first();
+            if (collect($item)->isNotEmpty()) {
+                $item = (object)$item;
+                $updateItem = $getTblDetails->where('id', $id)->first();
+                if ($updateItem) {
+                    $updateItem->update([
+                        "report_template_id" => $req->reportTemplateId,
+                        "x" => $item->x,
+                        "y" => $item->y,
+                        "field_type" => $item->fieldType,
+                        "field_name" => $item->fieldName,
+                        "font_name" => $item->fontName,
+                        "font_size" => $item->fontSize,
+                        "width" => $item->width,
+                        "is_underline" => $item->isUnderline,
+                        "is_bold" => $item->isBold,
+                        "is_italic" => $item->isItalic,
+                        "is_visible" => $item->isVisible,
+                        "is_boxed" => $item->isBoxed,
+                        "alignment" => $item->alignment,
+                        "color" => $item->color,
+                        "status" => 1,
+                    ]);
+                } else {
+                    $this->_mTempDtls::create([
+                        "report_template_id" => $req->reportTemplateId,
+                        "x" => $item->x,
+                        "y" => $item->y,
+                        "field_type" => $item->fieldType,
+                        "field_name" => $item->fieldName,
+                        "font_name" => $item->fontName,
+                        "font_size" => $item->fontSize,
+                        "width" => $item->width,
+                        "is_underline" => $item->isUnderline,
+                        "is_bold" => $item->isBold,
+                        "is_italic" => $item->isItalic,
+                        "is_visible" => $item->isVisible,
+                        "is_boxed" => $item->isBoxed,
+                        "alignment" => $item->alignment,
+                        "color" => $item->color,
+                    ]);
+                }
+            }
+        }
+    }
+
+    // Update Template Footer
+    public function updateTempFooter($req)
+    {
+        $getTblFooter = $this->_mTempFooter->getFooterByTempId($req->template['id']);
+        $reqFooter = collect($req->footer);
+        $toUpdateIds = $reqFooter->pluck('id');
+        $toBeDeletedFooters = $getTblFooter->whereNotIn('id', $toUpdateIds);
+
+        if (collect($toBeDeletedFooters)->isNotEmpty()) {                   // To Delete Template Details
+            foreach ($toBeDeletedFooters as $item) {
+                $item->update(['status' => 0]);
+            }
+        }
+
+        foreach ($toUpdateIds as $id) {
+            $item = $reqFooter->where('id', $id)->first();
+            if (collect($item)->isNotEmpty()) {
+                $item = (object)$item;
+                $updateItem = $getTblFooter->where('id', $id)->first();
+                if ($updateItem) {
+                    $updateItem->update([
+                        "report_template_id" => $req->reportTemplateId,
+                        "serial_no" => $item->serialNo,
+                        "field_type" => $item->fieldType,
+                        "caption" => $item->caption,
+                        "field_name" => $item->fieldName,
+                        "x" => $item->resource,
+                        "y" => $item->x,
+                        "width" => $item->y,
+                        "height" => $item->width,
+                        "fontname" => $item->height,
+                        "size" => $item->fontname,
+                        "is_underline" => $item->size,
+                        "is_bold" => $item->isUnderline,
+                        "is_italic" => $item->isBold,
+                        "is_visible" => $item->isItalic,
+                        "alignment" => $item->isVisible,
+                        "color" => $item->alignment,
+                        "status" => $item->color,
+                    ]);
+                } else {
+                    $this->_mTempFooter::create([
+                        "report_template_id" => $req->reportTemplateId,
+                        "serial_no" => $item->serialNo,
+                        "field_type" => $item->fieldType,
+                        "caption" => $item->caption,
+                        "field_name" => $item->fieldName,
+                        "x" => $item->resource,
+                        "y" => $item->x,
+                        "width" => $item->y,
+                        "height" => $item->width,
+                        "fontname" => $item->height,
+                        "size" => $item->fontname,
+                        "is_underline" => $item->size,
+                        "is_bold" => $item->isUnderline,
+                        "is_italic" => $item->isBold,
+                        "is_visible" => $item->isItalic,
+                        "alignment" => $item->isVisible,
+                        "color" => $item->alignment,
+                        "status" => $item->color,
+                    ]);
+                }
+            }
+        }
+    }
     /************** Template Footers End **************/
 
     /************** Template Parameters for no pdf reports ********** */
@@ -227,8 +433,8 @@ class SaveTemplateBll
     public function updateTempParameters($req)
     {
         $getTblParameters = $this->_mTempParameters->getParamByTempId($req->template['id']);
-        $parameters = collect($req->parameters);
-        $toUpdateIds = $parameters->pluck('id');
+        $reqParameters = collect($req->parameters);
+        $toUpdateIds = $reqParameters->pluck('id');
         $toBeDeletedParams = $getTblParameters->whereNotIn('id', $toUpdateIds);
 
         if ($toBeDeletedParams->isNotEmpty()) {                         // To Deleting Columns
@@ -238,7 +444,7 @@ class SaveTemplateBll
         }
 
         foreach ($toUpdateIds as $id) {                                 // Create Or Update Column
-            $item = $parameters->where('id', $id)->first();
+            $item = $reqParameters->where('id', $id)->first();
             if (collect($item)->isNotEmpty()) {
                 $item = (object)$item;
                 $updateItem = $getTblParameters->where('id', $id)->first();
