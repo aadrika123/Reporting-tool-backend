@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\BLL\DeleteTemplateBll;
 use App\BLL\GetTemplateByIdBll;
 use App\BLL\SaveTemplateBll;
 use App\Repository\Api\MasterApiRepository as MasterApiRepository;
@@ -14,6 +15,10 @@ use App\Http\Requests\Resource as ResourceRequest;
 use App\Http\Requests\TemplateRequest;
 use App\Models\ModuleMaster;
 use App\Models\VtTemplate;
+use App\Models\VtTemplateDeatil;
+use App\Models\VtTemplateFooter;
+use App\Models\VtTemplatePagelayout;
+use App\Models\VtTemplateParameter;
 use Illuminate\Http\Request;
 
 
@@ -228,13 +233,20 @@ class MasterController extends Controller
     // Get data for view and list in vt_search_groups table
     public function getGroup(Request $resource)
     {
+        $validator = Validator::make($resource->all(), [
+            'groupType' => 'nullable|string|In:ui,print,all'
+        ]);
+
+        if ($validator->fails())
+            return validationError($validator);
+
         try {
             $arr = array();
             // Check id found form request
             if ($resource->id)
                 $arr = DB::table('vt_search_groups')->where('id', $resource->id)->first(); // Particular single record based on id
             else
-                $arr = $this->groupList();
+                $arr = $this->groupList($resource->groupType);
 
             return responseMsgs(true, "Fetched Data", remove_null($arr), "RP0107", "1.0", $resource->deviceId);
         } catch (Exception $e) {
@@ -243,7 +255,7 @@ class MasterController extends Controller
     }
 
     // Group List
-    public function groupList()
+    public function groupList($groupType)
     {
         $cachedList = Redis::get('vt_search_groups');
         if (isset($cachedList))
@@ -252,7 +264,14 @@ class MasterController extends Controller
             $arr = DB::table('vt_search_groups')->where('status', 1)->orderByDesc('id')->get(); // All records from table
             Redis::set('vt_search_groups', json_encode($arr));
         }
-        return $arr;
+
+        if (isset($groupType)) {
+            if ($groupType == 'ui')
+                $arr = collect($arr)->where('is_report', false);
+            if ($groupType == 'print')
+                $arr = collect($arr)->where('is_report', true);
+        }
+        return collect($arr)->values();
     }
 
     // Deactive group
@@ -486,7 +505,41 @@ class MasterController extends Controller
     }
     /************** Template Lists ****************** */
 
-    public function MenuList()
+    /************** Delete Template ***************** */
+    public function deleteTemplate(Request $req)
+    {
+        $validator = Validator::make($req->all(), [
+            'id' => 'required|integer'
+        ]);
+
+        if ($validator->fails())
+            return validationError($validator);
+
+        try {
+            // Variable Assignments
+            $mVtTemplate = new VtTemplate();
+            $mSearchGroup = new VtSearchGroup();
+            $deleteTemplateBll = new DeleteTemplateBll;
+
+            // Derivative Assignments
+            $template = $mVtTemplate::find($req->id);
+            if (collect($template)->isEmpty())
+                throw new Exception("Template Not Found");
+            $searchGroup = $mSearchGroup::find($template->search_group_id);
+            if (collect($searchGroup)->isEmpty())
+                throw new Exception("Search Group Not Available");
+
+            $deleteTemplateBll->deleteTemplate($searchGroup->is_report, $template);
+            DB::commit();
+            return responseMsgs(true, "Successfully Deleted the Template", [], "010119", "1.0", $req->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "010119", "1.0", $req->deviceId);
+        }
+    }
+    /************** Delete Template ***************** */
+
+    public function MenuList(Request $req)
     {
         try {
             $redisConn = Redis::connection();
@@ -504,6 +557,7 @@ class MasterController extends Controller
             $arr = array();
             $subarr = array();
             $pid = 0;
+            $grpList = collect($grpList)->sortBy('search_group', SORT_NATURAL)->values();
             foreach ($grpList as $grp) { {
                     $grp = (object)$grp;
                     $pid = $grp->id;
@@ -515,9 +569,9 @@ class MasterController extends Controller
                 }
             }
 
-            return response($menuarr, 200);
+            return responseMsgs(true, "Menu List", remove_null($menuarr), "010117", "1.0", $req->deviceId);
         } catch (Exception $e) {
-            return response()->json($e->getMessage(), 400);
+            return responseMsgs(true, $e->getMessage(), [], "010117", "1.0", $req->deviceId);
         }
     }
 
@@ -535,11 +589,6 @@ class MasterController extends Controller
             $childarr['type'] = 'Child template';
             $submenu = array();
             if ($temp->detail_layout == 'General' || $temp->detail_layout == 'Form') {
-                $childarr1['menu_id'] = 1;
-                $childarr1['menu_name'] = 'Layout';
-                $childarr1['menu_code'] = 'Layout';
-                $childarr1['type'] = $temp->detail_layout . ' template';
-                array_push($submenu, $childarr1);
 
                 $childarr2['menu_id'] = 2;
                 $childarr2['menu_name'] = 'Details';
@@ -552,6 +601,12 @@ class MasterController extends Controller
                 $childarr3['menu_code'] = 'Footer';
                 $childarr3['type'] = $temp->detail_layout . ' template';
                 array_push($submenu, $childarr3);
+
+                $childarr1['menu_id'] = 1;
+                $childarr1['menu_name'] = 'Layout';
+                $childarr1['menu_code'] = 'Layout';
+                $childarr1['type'] = $temp->detail_layout . ' template';
+                array_push($submenu, $childarr1);
             }
 
             if ($temp->detail_layout == 'Label' || $temp->detail_layout == 'Document') {
@@ -564,7 +619,7 @@ class MasterController extends Controller
             $childarr['submenu'] = $submenu;
             array_push($menuarr, $childarr);
         }
-        //echo "<pre/>";print_r($menuarr);
+        $menuarr = collect($menuarr)->sortBy('menu_name')->values();
         return $menuarr;
     }
 

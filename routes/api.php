@@ -68,6 +68,7 @@ Route::controller(MasterController::class)->group(function () {
     Route::post('v1/template/update', 'updateTemplate');                // 14
     Route::post('v1/template/view', 'getTemplateById');                 // 15
     Route::post('v1/template/list', 'templateList');                    // 16
+    Route::post('v1/template/delete', 'deleteTemplate');                 // 19
 
     /*
     |--------------------------------------------------------------------------

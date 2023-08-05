@@ -220,7 +220,7 @@ class SaveTemplateBll
 
         if (collect($toBeDeletedLayouts)->isNotEmpty()) {               // To Delete Layouts
             foreach ($toBeDeletedLayouts as $item) {
-                $item->update(['status' => 0]);
+                $item->delete();
             }
         }
 
@@ -288,7 +288,7 @@ class SaveTemplateBll
 
         if (collect($toBeDeletedDetails)->isNotEmpty()) {                   // To Delete Template Details
             foreach ($toBeDeletedDetails as $item) {
-                $item->update(['status' => 0]);
+                $item->delete();
             }
         }
 
@@ -349,7 +349,7 @@ class SaveTemplateBll
 
         if (collect($toBeDeletedFooters)->isNotEmpty()) {                   // To Delete Template Details
             foreach ($toBeDeletedFooters as $item) {
-                $item->update(['status' => 0]);
+                $item->delete();
             }
         }
 
@@ -365,19 +365,19 @@ class SaveTemplateBll
                         "field_type" => $item->fieldType,
                         "caption" => $item->caption,
                         "field_name" => $item->fieldName,
-                        "x" => $item->resource,
-                        "y" => $item->x,
-                        "width" => $item->y,
-                        "height" => $item->width,
-                        "fontname" => $item->height,
-                        "size" => $item->fontname,
-                        "is_underline" => $item->size,
-                        "is_bold" => $item->isUnderline,
-                        "is_italic" => $item->isBold,
-                        "is_visible" => $item->isItalic,
-                        "alignment" => $item->isVisible,
-                        "color" => $item->alignment,
-                        "status" => $item->color,
+                        "x" => $item->x,
+                        "y" => $item->y,
+                        "width" => $item->width,
+                        "height" => $item->height,
+                        "fontname" => $item->fontname,
+                        "size" => $item->size,
+                        "is_underline" => $item->isUnderline,
+                        "is_bold" => $item->isBold,
+                        "is_italic" => $item->isItalic,
+                        "is_visible" => $item->isVisible,
+                        "alignment" => $item->alignment,
+                        "color" => $item->color,
+                        "status" => 1,
                     ]);
                 } else {
                     $this->_mTempFooter::create([
@@ -386,25 +386,28 @@ class SaveTemplateBll
                         "field_type" => $item->fieldType,
                         "caption" => $item->caption,
                         "field_name" => $item->fieldName,
-                        "x" => $item->resource,
-                        "y" => $item->x,
-                        "width" => $item->y,
-                        "height" => $item->width,
-                        "fontname" => $item->height,
-                        "size" => $item->fontname,
-                        "is_underline" => $item->size,
-                        "is_bold" => $item->isUnderline,
-                        "is_italic" => $item->isBold,
-                        "is_visible" => $item->isItalic,
-                        "alignment" => $item->isVisible,
-                        "color" => $item->alignment,
-                        "status" => $item->color,
+                        "x" => $item->x,
+                        "y" => $item->y,
+                        "width" => $item->width,
+                        "height" => $item->height,
+                        "fontname" => $item->fontname,
+                        "size" => $item->size,
+                        "is_underline" => $item->isUnderline,
+                        "is_bold" => $item->isBold,
+                        "is_italic" => $item->isItalic,
+                        "is_visible" => $item->isVisible,
+                        "alignment" => $item->alignment,
+                        "color" => $item->color
                     ]);
                 }
             }
         }
     }
     /************** Template Footers End **************/
+
+    // ╔═══════════════════════════════════════════════════════════════════════════╗
+    // ║                        ✅ Template Parameters ✅                         ║ 
+    // ╚═══════════════════════════════════════════════════════════════════════════╝ 
 
     /************** Template Parameters for no pdf reports ********** */
     public function saveTempParameters($req)
@@ -439,7 +442,7 @@ class SaveTemplateBll
 
         if ($toBeDeletedParams->isNotEmpty()) {                         // To Deleting Columns
             foreach ($toBeDeletedParams as $item) {
-                $item->update(['status' => 0]);
+                $item->delete();
             }
         }
 
