@@ -76,6 +76,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'options' => [
+                PDO::ATTR_PERSISTENT => true,
+            ]
         ],
         // Database Juidco Property
         'conn_juidco_prop' => [
@@ -91,6 +94,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'options' => [
+                PDO::ATTR_PERSISTENT => true,
+            ]
         ],
 
         'sqlsrv' => [
