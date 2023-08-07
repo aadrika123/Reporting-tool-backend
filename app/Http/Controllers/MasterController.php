@@ -472,7 +472,8 @@ class MasterController extends Controller
     public function templateList(Request $req)
     {
         $validator = Validator::make($req->all(), [
-            'reportType' => 'required|string|In:ui,print,all'
+            'reportType' => 'required|string|In:ui,print,all',
+            'moduleId' => 'nullable|integer'
         ]);
 
         if ($validator->fails())
@@ -482,22 +483,14 @@ class MasterController extends Controller
             $mTemplate = new VtTemplate();
 
             if ($req->reportType == 'ui')                                                 // UI Templates Only
-                $template = $mTemplate->getTemplateByType(false);
+                $template = $mTemplate->getTemplateByType(false, $req->moduleId);
 
             if ($req->reportType == 'print')                                              // Pritable Templates Only
-                $template = $mTemplate->getTemplateByType(true);
+                $template = $mTemplate->getTemplateByType(true, $req->moduleId);
 
             if ($req->reportType == 'all')                                              // All Templates
-            {
-                $templates = Redis::get('vt_templates');
-                if (isset($templates)) {
-                    $template = json_decode($templates, true);
-                } else {
-                    $template = $mTemplate::orderBy('id', 'desc')
-                        ->get();
-                    Redis::set('vt_templates', json_encode($template));                    // Redis key is deleting on Observer
-                }
-            }
+                $template = $mTemplate->getTemplateByTempId($req->moduleId);
+
             return responseMsgs(true, "Template Details", remove_null($template), "RP0115", "1.0", $req->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "RP0115", "1.0", $req->deviceId);
