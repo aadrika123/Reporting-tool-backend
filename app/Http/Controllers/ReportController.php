@@ -55,12 +55,20 @@ class ReportController extends Controller
     public function queryResult(Request $req)
     {
         $validator = Validator::make($req->all(), [
-            'requestQuery' => 'required|string'
+            'requestQuery' => 'required|string',
+            'moduleId' => 'nullable|integer',
+            'perPage' => 'nullable|integer',
+            'page' => 'nullable|integer'
         ]);
 
         if ($validator->fails())
             return validationError($validator);
+
         try {
+            $perPage = $req->perPage ?? 10;
+            $page = ($req->page ?? 1);
+            $offset = ($page * $perPage) - $perPage;
+
             $query = $req->requestQuery;
             $lowerQuery = Str::lower($query);
             $strQuery = Str::contains($lowerQuery, ['update', 'delete', 'insert']);
@@ -70,14 +78,23 @@ class ReportController extends Controller
             if ($strQuery)
                 throw new Exception("Limit has been set default dont mention it on query");
 
-            $query = $query . " limit 100";
+            $totalRecordSql = "select count(*) as count from ($query) total";
+            $query = $query . " limit $perPage offset $offset";
+            $data = [];
 
-            if (isset($req->moduleId) && $req->moduleId == 1)
-                $queryResult = DB::connection('conn_juidco_prop')->select($query);
-            else
-                $queryResult = DB::select($query);
+            if (isset($req->moduleId) && $req->moduleId == 1) {                 // For Property Module
+                $totalRecord = DB::connection('conn_juidco_prop')->select($totalRecordSql);
+                $data["dataSet"] = DB::connection('conn_juidco_prop')->select($query);
+            } else {                                                            // for others
+                $totalRecord = DB::select($query);
+                $data["dataSet"] = DB::select($query);
+            }
 
-            return responseMsgs(true, "Query Result", remove_null($queryResult), "RP0202", "1.0", $req->deviceId);
+            $data["totalRecords"] = (collect($totalRecord)->first()->count ?? 0);
+            $data["totalPages"] = ceil($data["totalRecords"] / $perPage);                   // With round figured data
+            $data["currentPage"] = $page;
+
+            return responseMsgs(true, "Query Result", remove_null($data), "RP0202", "1.0", $req->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "RP0202", "1.0", $req->deviceId);
         }

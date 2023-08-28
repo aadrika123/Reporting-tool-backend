@@ -22,6 +22,10 @@ class GenerateSearchReportBll
      */
     public function generate($req, $template)
     {
+        $perPage = $req->perPage ?? 10;
+        $page = ($req->page ?? 1);
+        $offset = ($page * $perPage) - $perPage;
+
         $customVars = collect();
         $this->_parameters = $template['parameters'];
         $linkName = array();
@@ -37,11 +41,25 @@ class GenerateSearchReportBll
         foreach ($customVars as $key => $item) {
             $query = Str::replace($key, $item, $query);
         }
+
+        $totalRecordSql = "select count(*) as count from ($query) total";
+        $query = $query . " limit $perPage offset $offset";
+
         if (isset($template['templates']->module_id)) {
             if ($template['templates']->module_id == 1)                             // Property
-                $queryResult = DB::connection('conn_juidco_prop')->select($query);
-        } else
-            $queryResult = DB::select($query);
-        return $queryResult;
+            {
+                $totalRecord = DB::connection('conn_juidco_prop')->select($totalRecordSql);
+                $data["dataSet"] = DB::connection('conn_juidco_prop')->select($query);
+            }
+        } else {
+            $totalRecord = DB::select($totalRecordSql);
+            $data["dataSet"] = DB::select($query);
+        }
+
+        $data["totalRecords"] = (collect($totalRecord)->first()->count ?? 0);
+        $data["totalPages"] = ceil($data["totalRecords"] / $perPage);                   // With round figured data
+        $data["currentPage"] = $page;
+
+        return $data;
     }
 }
